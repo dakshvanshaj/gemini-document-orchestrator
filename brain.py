@@ -1,10 +1,25 @@
 import dotenv
 import os
+import json
 from google import genai
-from google.genai import types 
-
+# from google.genai import types 
+from pydantic import BaseModel, Field
+from typing import List
 # Load environment variables from .env file
 dotenv.load_dotenv()
+
+class KeyValuePair(BaseModel):
+    # Dynamic Fields for key-value pairs
+    key: str = Field(description="The label of the data point")
+    value: str = Field(description="The content associated with the key")
+
+class DocumentAnalysis(BaseModel):
+    # Static Fields for n8n logic 
+    summary: str = Field(description='A concise summary of the document content')
+    risk_level: str = Field(description="Assess the risk level as low, medium, or high based on the content")
+
+    # Dynamic Fields 
+    relevant_attributes: List[KeyValuePair] = Field(description="List of 5-8 most important facts from the document")
 
 def ask_gemini(text: str, question: str, api_key: str):
 
@@ -24,9 +39,14 @@ def ask_gemini(text: str, question: str, api_key: str):
 
     response = client.models.generate_content(
         model="gemini-3-flash-preview",
-        contents=[prompt])
+        contents=[prompt],
+        config={
+                    'response_mime_type': 'application/json',
+                    'response_schema': DocumentAnalysis, # Enforcing our Hybrid Schema
+                }
+        )
 
-    return response.text
+    return response.parsed
 
 if __name__ == "__main__":
 
@@ -48,4 +68,7 @@ if __name__ == "__main__":
         print('Asking Gemini the question...')
         answer = ask_gemini(text, question, api_key)
         print('\n\n--- Answer ---')
-        print(answer)
+        json_string = json.dumps(answer.model_dump(), indent=4)
+        print(json_string)
+    
+      
