@@ -1,0 +1,264 @@
+{
+  "name": "Ai-doc-orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "3c91423b-a9ff-43ec-a57a-181a4bf61836",
+      "name": "Webhook",
+      "webhookId": "00000000-0000-0000-0000-000000000000"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemma-3-12b-it",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        144,
+        208
+      ],
+      "id": "6073b4d2-c688-4784-8b1e-09a4af0d67c0",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "p16PShmsbKzZJFRz",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "5956f84a-d4dc-48ad-b4ce-72ce56e1063b",
+              "leftValue": "={{ $('Webhook').item.json.body.extracted_data.risk_level }}",
+              "rightValue": "high",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        560,
+        0
+      ],
+      "id": "706ce825-d188-4fb6-beb7-dfab3d52fb59",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Senior Data Analyst.\n\nContext:\n{{ $json.body.text_context }}\n\nUser Question:\n{{ $json.body.user_query }}\n\nTask: Provide a concise, executive-level answer.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6fe995c0-65e0-4d53-9d01-201c919b9d78",
+      "name": "Analysis"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a succinct and urgent warning email to {{ $('Webhook').item.json.body.recipient_email }}.\n\nThe subject is a high-risk document containing the following text: \"{{ $json.text }}\".\n\nIn the body, explain why this information is critical based on the text provided. The tone should be serious and foreboding. Ensure the message is complete and ready to send—do not include brackets, fill-in-the-blanks, or placeholders.\n\nSign off simply as: Anonymous.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        768,
+        -96
+      ],
+      "id": "cb12a282-843b-4dfd-a3be-c77792b83230",
+      "name": "Email Writer"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        -96
+      ],
+      "id": "74229b80-1b4b-4fad-b655-c3f6610da29d",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "fromEmail": "your-sender-email@gmail.com",
+        "toEmail": "={{ $('Webhook').item.json.body.recipient_email }}",
+        "subject": "URGENT: High-risk document content warning",
+        "html": "={{ $json.data }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1280,
+        -96
+      ],
+      "id": "0eea04ef-4e13-492a-953b-2c37f449195c",
+      "name": "Send an Email",
+      "webhookId": "00000000-0000-0000-0000-000000000000",
+      "credentials": {
+        "smtp": {
+          "id": "VfhZMINmhTukVPe1",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n  {\n    \"status\": \"Completed\",\n    \"final_answer\": $('Analysis').item.json.text,\n    \"email_body\": $('Markdown').isExecuted ? $('Markdown').item.json.data : \"Email not sent due to risk level not being high\"\n  }\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1440,
+        0
+      ],
+      "id": "7f1797b5-abc9-4de1-8388-1d30468959ec",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analysis",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Email Writer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Email Writer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analysis": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Writer": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "c5d8f12b-d97d-4579-9691-4479dc0c9a89",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "generic-instance-id-placeholder"
+  },
+  "id": "5oXDIGDh0647W0mybgnAH",
+  "tags": []
+}
