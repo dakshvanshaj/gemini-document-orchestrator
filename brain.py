@@ -5,6 +5,7 @@ from google import genai
 # from google.genai import types 
 from pydantic import BaseModel, Field
 from typing import List
+from config import MODEL
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
@@ -38,7 +39,7 @@ def ask_gemini(text: str, question: str, api_key: str):
     client = genai.Client(api_key=api_key)
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model=MODEL,
         contents=[prompt],
         config={
                     'response_mime_type': 'application/json',
