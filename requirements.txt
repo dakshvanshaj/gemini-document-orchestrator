@@ -37,6 +37,8 @@ cryptography==46.0.4
     #   pdfminer-six
 distro==1.9.0
     # via google-genai
+exceptiongroup==1.3.1 ; python_full_version < '3.11'
+    # via anyio
 gitdb==4.0.12
     # via gitpython
 gitpython==3.1.46
@@ -68,7 +70,12 @@ markupsafe==3.0.3
     # via jinja2
 narwhals==2.16.0
     # via altair
-numpy==2.4.2
+numpy==2.2.6 ; python_full_version < '3.11'
+    # via
+    #   pandas
+    #   pydeck
+    #   streamlit
+numpy==2.4.2 ; python_full_version >= '3.11'
     # via
     #   pandas
     #   pydeck
@@ -148,9 +155,13 @@ tornado==6.5.4
 typing-extensions==4.15.0
     # via
     #   altair
+    #   anyio
+    #   cryptography
+    #   exceptiongroup
     #   google-genai
     #   pydantic
     #   pydantic-core
+    #   referencing
     #   streamlit
     #   typing-inspection
 typing-inspection==0.4.2
