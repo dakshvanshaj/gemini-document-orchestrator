@@ -12,7 +12,7 @@ load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
 st.set_page_config(page_title="Doc Orchestrator", layout="wide")
-st.logo("logo.png", icon_image="logo.png")
+st.logo("logo.png", icon_image="icon.png")
 st.title("📄 AI Document Orchestrator")
 
 # Check: Do we have a stored document text yet?
